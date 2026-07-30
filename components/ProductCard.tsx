@@ -9,23 +9,21 @@ type Product = {
 };
 
 export default function ProductCard({ product }: { product: Product }) {
+  const imageSrc =
+    product.image && product.image.startsWith("https://")
+      ? product.image
+      : "/images/no-image.png";
+console.log(product.code, product.image);
   return (
     <Link href={`/product/${product.id}`} className="group block">
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
 
         <div className="relative h-60 w-full overflow-hidden bg-slate-100">
-          {product.image ? (
-            <Image
-              src={product.image}
+          <img
+              src={imageSrc}
               alt={product.name}
-              fill
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-6xl">
-              💊
-            </div>
-          )}
+              className="h-full w-full object-cover"
+/>
         </div>
 
         <div className="p-5">
@@ -37,7 +35,7 @@ export default function ProductCard({ product }: { product: Product }) {
             Code: {product.code}
           </p>
 
-          <div className="mt-5 flex items-center text-blue-600 font-medium group-hover:gap-3 gap-2 transition-all">
+          <div className="mt-5 flex items-center gap-2 font-medium text-blue-600 transition-all group-hover:gap-3">
             <span>عرض الصنف</span>
             <span className="transition-transform group-hover:translate-x-1">
               →
