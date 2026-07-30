@@ -40,57 +40,71 @@ export async function POST(req: Request) {
 
     const zip = new AdmZip(buffer);
 
-    let count = 0;
+    const entries = zip
+      .getEntries()
+      .filter((entry) => {
+        if (entry.isDirectory) return false;
 
-    for (const entry of zip.getEntries()) {
-      if (entry.isDirectory) continue;
+        const ext = path.extname(entry.entryName).toLowerCase();
 
-      const ext = path.extname(entry.entryName).toLowerCase();
-
-      if (![".jpg", ".jpeg", ".png", ".webp"].includes(ext)) continue;
-
-      const filename = path.basename(entry.entryName);
-
-      const contentType =
-        ext === ".png"
-          ? "image/png"
-          : ext === ".webp"
-            ? "image/webp"
-            : "image/jpeg";
-
-      const { error } = await supabase.storage
-        .from("products")
-        .upload(filename, entry.getData(), {
-          contentType,
-          upsert: true,
-        });
-
-      if (error) {
-        console.error(`Failed to upload ${filename}:`, error.message);
-        continue;
-      }
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage
-        .from("products")
-        .getPublicUrl(filename);
-
-      const code = path.parse(filename).name;
-
-      const result = await prisma.product.updateMany({
-        where: {
-          code,
-        },
-        data: {
-          image: publicUrl,
-        },
+        return [".jpg", ".jpeg", ".png", ".webp"].includes(ext);
       });
 
-      console.log("CODE:", code);
-      console.log("UPDATED:", result.count);
+    const BATCH_SIZE = 20;
 
-      count++;
+    let count = 0;
+
+    for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+      const batch = entries.slice(i, i + BATCH_SIZE);
+
+      await Promise.all(
+        batch.map(async (entry) => {
+          try {
+            const ext = path.extname(entry.entryName).toLowerCase();
+            const filename = path.basename(entry.entryName);
+
+            const contentType =
+              ext === ".png"
+                ? "image/png"
+                : ext === ".webp"
+                  ? "image/webp"
+                  : "image/jpeg";
+
+            const { error } = await supabase.storage
+              .from("products")
+              .upload(filename, entry.getData(), {
+                contentType,
+                upsert: true,
+              });
+
+            if (error) {
+              console.error(`Failed to upload ${filename}:`, error.message);
+              return;
+            }
+
+            const {
+              data: { publicUrl },
+            } = supabase.storage
+              .from("products")
+              .getPublicUrl(filename);
+
+            const code = path.parse(filename).name;
+
+            await prisma.product.updateMany({
+              where: {
+                code,
+              },
+              data: {
+                image: publicUrl,
+              },
+            });
+
+            count++;
+          } catch (err) {
+            console.error("Upload error:", err);
+          }
+        })
+      );
     }
 
     return NextResponse.json({
