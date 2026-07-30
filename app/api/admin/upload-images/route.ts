@@ -55,8 +55,8 @@ export async function POST(req: Request) {
         ext === ".png"
           ? "image/png"
           : ext === ".webp"
-          ? "image/webp"
-          : "image/jpeg";
+            ? "image/webp"
+            : "image/jpeg";
 
       const { error } = await supabase.storage
         .from("products")
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
       const code = path.parse(filename).name;
 
-      await prisma.product.updateMany({
+      const result = await prisma.product.updateMany({
         where: {
           code,
         },
@@ -86,6 +86,9 @@ export async function POST(req: Request) {
           image: publicUrl,
         },
       });
+
+      console.log("CODE:", code);
+      console.log("UPDATED:", result.count);
 
       count++;
     }
