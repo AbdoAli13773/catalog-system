@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 type Product = {
   id: number;
@@ -13,7 +12,6 @@ export default function ProductCard({ product }: { product: Product }) {
     product.image && product.image.startsWith("https://")
       ? product.image
       : "/images/no-image.png";
-console.log(product.code, product.image);
   return (
     <Link href={`/product/${product.id}`} className="group block">
       <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
