@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import AdmZip from "adm-zip";
-import fs from "fs";
+import { prisma } from "@/lib/prisma";
 import path from "path";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!
+);
 
 export async function POST(req: Request) {
   try {
@@ -19,7 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!file.name.endsWith(".zip")) {
+    if (!file.name.toLowerCase().endsWith(".zip")) {
       return NextResponse.json(
         {
           success: false,
@@ -34,12 +40,6 @@ export async function POST(req: Request) {
 
     const zip = new AdmZip(buffer);
 
-    const uploadDir = path.join(process.cwd(), "uploads");
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     let count = 0;
 
     for (const entry of zip.getEntries()) {
@@ -51,10 +51,41 @@ export async function POST(req: Request) {
 
       const filename = path.basename(entry.entryName);
 
-      fs.writeFileSync(
-        path.join(uploadDir, filename),
-        entry.getData()
-      );
+      const contentType =
+        ext === ".png"
+          ? "image/png"
+          : ext === ".webp"
+          ? "image/webp"
+          : "image/jpeg";
+
+      const { error } = await supabase.storage
+        .from("products")
+        .upload(filename, entry.getData(), {
+          contentType,
+          upsert: true,
+        });
+
+      if (error) {
+        console.error(`Failed to upload ${filename}:`, error.message);
+        continue;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage
+        .from("products")
+        .getPublicUrl(filename);
+
+      const code = path.parse(filename).name;
+
+      await prisma.product.updateMany({
+        where: {
+          code,
+        },
+        data: {
+          image: publicUrl,
+        },
+      });
 
       count++;
     }

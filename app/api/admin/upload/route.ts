@@ -23,12 +23,19 @@ export async function POST(req: Request) {
  
 
     // حذف المنتجات القديمة
-    await prisma.product.deleteMany();
-
-    // إضافة المنتجات الجديدة
-    await prisma.product.createMany({
-      data: products,
-    });
+    for (const product of products) {
+  await prisma.product.upsert({
+    where: {
+      code: product.code,
+    },
+    update: {
+      name: product.name,
+      quantity: product.quantity,
+      price: product.price,
+    },
+    create: product,
+  });
+}
 
     return NextResponse.json({
       success: true,

@@ -20,12 +20,14 @@ const products: {
     // تخطي أول صف (الهيدر)
     if (rowNumber === 1) return;
 
-    products.push({
-          code: row.getCell(3).value?.toString().trim() ?? "", // رقم الصنف
-          name: row.getCell(2).value?.toString().trim() ?? "", // اسم الصنف
-          quantity: Number(row.getCell(4).value ?? 0),
-          price: Number(row.getCell(5).value ?? 0),
-          image: `/uploads/${row.getCell(3).value?.toString().trim()}.jpg`,
+    const code = row.getCell(3).value?.toString().trim() ?? "";
+
+products.push({
+  code,
+  name: row.getCell(2).value?.toString().trim() ?? "",
+  quantity: Number(row.getCell(4).value ?? 0),
+  price: Number(row.getCell(5).value ?? 0),
+  image: code, // هنستخدم الكود فقط
 });
   });
 
